@@ -9,25 +9,25 @@ st.set_page_config(page_title="Movie Genre Popularity", layout="wide")
 
 # Caching data and model loading for efficiency
 @st.cache_data  
-def load_data():
+def load_data(): #Reads the CSV file, and returns selected columns
     return pd.read_csv(
         'C:\\Users\\AL-Rehmat\\Documents\\project practice\\df_movies.csv',
         usecols=['startYear', 'genres', 'originalTitle', 'averageRating']
     )
 
 @st.cache_data
-def load_model_and_scaler():
+def load_model_and_scaler(): #Loads a pre-trained machine learning model
     model = pickle.load(open("C:\\Users\\AL-Rehmat\\Documents\\project practice\\random_forest_model.pkl", "rb"))
     scaler = pickle.load(open("C:\\Users\\AL-Rehmat\\Documents\\project practice\\scaler_model.pkl", "rb"))
     return model, scaler
 
 def predict_votes(model, scaler, average_rating, start_year, genre_encoded_value):
     data = np.array([[average_rating, start_year, genre_encoded_value]])
-    data_scaled = scaler.transform(data)
+    data_scaled = scaler.transform(data) #It normalizes the input data before feeding it to the model.
     return model.predict(data_scaled)[0]
 
 # Load data and models
-split_genre = load_data()
+split_genre = load_data() #load the dataset and the model as per the previous caching functions.
 model, scaler = load_model_and_scaler()
 
 # App Design
@@ -39,21 +39,21 @@ st.sidebar.header("🔍 Input Section")
 year_input = st.sidebar.number_input('Enter Year', min_value=1900, max_value=2025, value=2025)
 average_rating = st.sidebar.number_input('Enter Average Rating (0-10)', min_value=0.0, max_value=10.0, value=5.0)
 
-filtered_data = split_genre[split_genre['startYear'] == year_input]
+filtered_data = split_genre[split_genre['startYear'] == year_input] #Filters the dataset based on the selected year.
 
 if not filtered_data.empty:
     # Handle multiple genres
     filtered_data['genres_split'] = filtered_data['genres'].str.split(', ')
-    genres_flat = filtered_data.explode('genres_split')
+    genres_flat = filtered_data.explode('genres_split') #to expand the genres column so that each movie-genre pair is a separate row.
     top_genres = genres_flat['genres_split'].value_counts().head(2).index.tolist()
 
     # Results Display
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2) #Displays the top genres and top movies for those genres in a two-column layout.
 
     with col1:
         st.subheader(f"📅 Year: {year_input}")
         st.markdown(f"The **most popular genres** for {year_input} are:")
-        for idx, genre in enumerate(top_genres, start=1):
+        for idx, genre in enumerate(top_genres, start=1): # for returning index
             st.markdown(f"**{idx}. {genre}**")
 
     with col2:
@@ -131,7 +131,7 @@ if not filtered_data.empty:
 
     # Votes Prediction Line Chart
     st.subheader("📈 Predicted Votes Over Years")
-    years = list(range(year_input - 5, year_input + 1))  # 5 years trend
+    years = list(range(year_input - 5, year_input + 1))  # creates a line chart showing how the predicted number of votes changes over the past 5 years.
     predicted_votes = [predict_votes(model, scaler, average_rating, year, genre_encoded_values[0]) for year in years]
     fig = px.line(
         x=years,
